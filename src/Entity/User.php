@@ -2,57 +2,87 @@
 
 namespace App\Entity;
 
-use App\Repository\UtilisateurRepository;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Delete;
+use App\Repository\UserRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
-#[ORM\Entity(repositoryClass: UtilisateurRepository::class)]
-#[ORM\HasLifecycleCallbacks] // Permet d'ajouter des callbacks pour gérer les dates automatiquement
-class Utilisateur
+#[ORM\Entity(repositoryClass: UserRepository::class)]
+#[ORM\HasLifecycleCallbacks]
+#[ApiResource(
+    normalizationContext: ['groups' => ['read:collection']],
+    denormalizationContext: ['groups' => ['write:item']],
+    operations: [
+        new GetCollection(),
+        new Get(),
+        new Post(),
+        new Put(),
+        new Delete()
+    ]
+)]
+class User
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['read:collection'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
+    #[Groups(['read:collection', 'write:item'])]
     private string $nom;
 
     #[ORM\Column(length: 50)]
+    #[Groups(['read:collection', 'write:item'])]
     private string $prenom;
 
     #[ORM\Column(length: 100, unique: true)]
+    #[Groups(['read:collection', 'write:item'])]
     private string $email;
 
     #[ORM\Column(length: 50)]
+    #[Groups(['read:collection', 'write:item'])]
     private string $pays;
 
     #[ORM\Column(length: 50)]
+    #[Groups(['read:collection', 'write:item'])]
     private string $ville;
 
     #[ORM\Column(length: 50, unique: true)]
+    #[Groups(['read:collection', 'write:item'])]
     private string $login;
 
     #[ORM\Column(length: 100)]
+    #[Groups(['write:item'])] // Mot de passe non exposé en lecture
     private string $motDePasse;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['read:collection', 'write:item'])]
     private ?string $filmsFavoris = null;
 
-    #[ORM\ManyToOne(targetEntity: Abonnement::class)]
-    #[ORM\JoinColumn(nullable: false)]
-    private Abonnement $abonnement;
+    #[ORM\ManyToOne(targetEntity: Subscription::class, inversedBy: 'users')]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['read:collection', 'write:item'])]
+    private ?Subscription $subscription=null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(['read:collection'])]
     private \DateTimeInterface $createdAt;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(['read:collection'])]
     private \DateTimeInterface $updatedAt;
 
     public function __construct()
     {
-        $this->createdAt = new \DateTime(); // Date de création à l'initialisation
-        $this->updatedAt = new \DateTime(); // Date de mise à jour à l'initialisation
+        $this->createdAt = new \DateTime();
+        $this->updatedAt = new \DateTime();
     }
 
     #[ORM\PrePersist]
@@ -161,14 +191,14 @@ class Utilisateur
         return $this;
     }
 
-    public function getAbonnement(): Abonnement
+    public function getSubscription(): ?Subscription
     {
-        return $this->abonnement;
+        return $this->subscription;
     }
 
-    public function setAbonnement(Abonnement $abonnement): static
+    public function setSubscription(?Subscription $subscription): static
     {
-        $this->abonnement = $abonnement;
+        $this->subscription = $subscription;
         return $this;
     }
 

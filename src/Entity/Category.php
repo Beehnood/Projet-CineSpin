@@ -3,32 +3,56 @@
 namespace App\Entity;
 
 use App\Repository\CategoryRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use ApiPlatform\Core\Annotation\ApiResource;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Delete;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: CategoryRepository::class)]
-#[ORM\HasLifecycleCallbacks] // Permet de gérer automatiquement les dates
+#[ORM\HasLifecycleCallbacks]
+#[ApiResource(
+    normalizationContext: ['groups' => ['read:collection']],
+    denormalizationContext: ['groups' => ['write:item']],
+    operations: [
+        new Post(),
+        new Delete(),
+        new Get(normalizationContext: ['groups' => ['read:collection:item']]),
+    ]
+)]
 class Category
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['read:collection', 'read:collection:item'])] // Ajouté à read:collection:item
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
-    private string $nom;
+    #[Groups(['read:collection', 'read:collection:item', 'write:item'])] // Ajouté à read:collection:item
+    private string $name;
+
+    #[ORM\ManyToMany(targetEntity: Film::class, mappedBy: "categories")]
+    #[Groups(['read:collection:item'])] // Visible uniquement dans le détail
+    private Collection $films;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(['read:collection', 'read:collection:item'])] // Ajouté aux groupes
     private \DateTimeInterface $createdAt;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(['read:collection', 'read:collection:item'])] // Ajouté aux groupes
     private \DateTimeInterface $updatedAt;
 
     public function __construct()
     {
-        $this->createdAt = new \DateTime(); // Initialise la date de création
-        $this->updatedAt = new \DateTime(); // Initialise la date de mise à jour
+        $this->films = new ArrayCollection();
+        $this->createdAt = new \DateTime();
+        $this->updatedAt = new \DateTime();
     }
 
     #[ORM\PrePersist]
@@ -49,14 +73,33 @@ class Category
         return $this->id;
     }
 
-    public function getNom(): string
+    public function getName(): string
     {
-        return $this->nom;
+        return $this->name;
     }
 
-    public function setNom(string $nom): static
+    public function setName(string $name): static
     {
-        $this->nom = $nom;
+        $this->name = $name;
+        return $this;
+    }
+
+    public function getFilms(): Collection
+    {
+        return $this->films;
+    }
+
+    public function addFilm(Film $film): static
+    {
+        if (!$this->films->contains($film)) {
+            $this->films->add($film);
+        }
+        return $this;
+    }
+
+    public function removeFilm(Film $film): static
+    {
+        $this->films->removeElement($film);
         return $this;
     }
 
