@@ -2,17 +2,17 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Delete;
 use App\Repository\FilmRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Delete;
-use ApiPlatform\Metadata\Post;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: FilmRepository::class)]
@@ -49,13 +49,17 @@ class Film
     private \DateTimeInterface $dateSortie;
 
     #[ORM\Column(type: "float", options: ["default" => 0])]
-    #[Groups(['film:read'])] // Note moyenne en lecture seule
+    #[Groups(['film:read'])]
     private float $noteMoyenne = 0;
 
     #[ORM\ManyToMany(targetEntity: Category::class, inversedBy: "films")]
     #[ORM\JoinTable(name: "film_category")]
     #[Groups(['film:read', 'film:write'])]
     private Collection $categories;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['film:read', 'film:write'])]
+    private ?string $posterPath = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     #[Groups(['film:read'])]
@@ -153,6 +157,17 @@ class Film
         if ($this->categories->removeElement($category)) {
             $category->removeFilm($this); // Synchronisation bidirectionnelle
         }
+        return $this;
+    }
+
+    public function getPosterPath(): ?string
+    {
+        return $this->posterPath;
+    }
+
+    public function setPosterPath(?string $posterPath): static
+    {
+        $this->posterPath = $posterPath;
         return $this;
     }
 

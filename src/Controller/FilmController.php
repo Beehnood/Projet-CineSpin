@@ -44,6 +44,7 @@ class FilmController extends AbstractController
         $film->setSynopsis($data['overview']);
         $film->setDateSortie(new \DateTime($data['release_date']));
         $film->setNoteMoyenne($data['vote_average']);
+        $film->setPosterPath($data['poster_path']);
         $film->setCreatedAt(new \DateTime());
         $film->setUpdatedAt(new \DateTime());
 
